@@ -54,7 +54,7 @@ app = gr.Interface(
     description="Enter game features to predict the Steam game price.",
     examples=examples,
     theme=gr.themes.Soft(),
-    flagging_mode="never",
+    #flagging_mode="never",
     article="© 2025 | Predictive model trained on Steam data."
 )
 
