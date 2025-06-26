@@ -1,62 +1,125 @@
-import gradio as gr
 import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from math import sqrt
 import skops.io as sio
+import os
+import matplotlib.pyplot as plt
 
-model_path = "Model/steam_pipeline.skops"
+def load_and_preprocess_data(path):
+    df = pd.read_csv(path)
 
-# Wczytaj model z dopuszczeniem typu numpy.dtype
-with open(model_path, "rb") as f:
-    model = sio.load(f, trusted=["numpy.dtype"])
+    # Usuwanie kolumn, które nie będą używane
+    df = df.drop(['appid', 'english', 'steamspy_tags'], axis=1)
 
-# Funkcja predykcyjna
-def predict_price(english, required_age, categories, genres, platforms,
-                  achievements, positive_ratings, negative_ratings, average_playtime):
-    input_df = pd.DataFrame([{
-        'english': int(english),
-        'required_age': int(required_age),
-        'categories': categories,
-        'genres': genres,
-        'platforms': platforms,
-        'achievements': int(achievements),
-        'positive_ratings': int(positive_ratings),
-        'negative_ratings': int(negative_ratings),
-        'average_playtime': float(average_playtime)
-    }])
-    prediction = model.predict(input_df)
-    return f"Predicted Price: ${prediction[0]:.2f}"
+    # Usuwanie rekordów z zerowymi wartościami w ważnych kolumnach
+    df = df[(df['average_playtime'] != 0) & (df['median_playtime'] != 0) & (df['price'] != 0)]
 
-# UI inputs
-inputs = [
-    gr.Radio(choices=["0", "1"], label="Is English?", value="1"),
-    gr.Number(label="Required Age", value=0, precision=0),
-    gr.Textbox(label="Categories (semicolon-separated)", value="Single-player;Partial Controller Support"),
-    gr.Textbox(label="Genres", value="Action"),
-    gr.Textbox(label="Platforms", value="windows"),
-    gr.Number(label="Number of Achievements", value=0, precision=0),
-    gr.Number(label="Positive Ratings", value=9817, precision=0),
-    gr.Number(label="Negative Ratings", value=819, precision=0),
-    gr.Number(label="Average Playtime (minutes)", value=209, precision=1),
-]
+    # Obcięcie cen do 10%-90% percentyla
+    df = df[(df['price'] >= df['price'].quantile(0.1)) & (df['price'] <= df['price'].quantile(0.9))]
 
-# Przykładowe dane
-examples = [
-    ["1", 0, "Single-player;Partial Controller Support", "Action", "windows", 0, 9817, 819, 209],
-    ["1", 18, "Single-player", "RPG", "windows;mac", 10, 24000, 1200, 340],
-    ["0", 0, "Multiplayer", "Simulation", "linux", 0, 300, 50, 90]
-]
+    # Mapowanie kolumny 'owners'
+    mapping = {
+        '0-20000': 1,
+        '20000-50000': 2,
+        '50000-100000': 3,
+        '100000-200000': 4,
+        '200000-500000': 5,
+        '500000-1000000': 6,
+        '1000000-2000000': 7,
+        '2000000-5000000': 8,
+        '5000000-10000000': 9
+    }
+    df['owners'] = df['owners'].map(mapping)
 
-# Gradio interfejs
-app = gr.Interface(
-    fn=predict_price,
-    inputs=inputs,
-    outputs="text",
-    title="Steam Game Price Predictor 🎮",
-    description="Enter game features to predict the Steam game price.",
-    examples=examples,
-    theme=gr.themes.Soft(),
-    #flagging_mode="never",
-    article="© 2025 | Predictive model trained on Steam data."
-)
+    # Dodanie cech boolowskich
+    df['is_multiplatform'] = df['platforms'].str.contains(';')
+    df['is_Single-Player'] = df['categories'].str.contains('Single-player')
+    df['is_Action'] = df['genres'].str.contains('Action')
+
+    # Konwersja bool na int
+    bool_cols = ['is_multiplatform', 'is_Single-Player', 'is_Action']
+    df[bool_cols] = df[bool_cols].astype(int)
+
+    # Kolumny cech
+    feature_cols = ['positive_ratings', 'negative_ratings', 'average_playtime', 'median_playtime',
+                    'owners', 'is_multiplatform', 'is_Single-Player', 'is_Action']
+
+    # Usunięcie braków danych
+    df = df.dropna(subset=feature_cols + ['price'])
+
+    X = df[feature_cols]
+    y = df['price']
+
+    return X, y
+
+def create_pipeline():
+    numeric_features = ['positive_ratings', 'negative_ratings', 'average_playtime', 'median_playtime', 'owners']
+    categorical_features = ['is_multiplatform', 'is_Single-Player', 'is_Action']
+
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
+
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('encoder', OrdinalEncoder())
+    ])
+
+    preprocessor = ColumnTransformer(transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
+    ])
+
+    return pipeline
+
+def main():
+    X, y = load_and_preprocess_data("Data/steam.csv")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    pipeline = create_pipeline()
+    pipeline.fit(X_train, y_train)
+
+    score = pipeline.score(X_test, y_test)
+    print(f"Model score (R^2) na danych testowych: {score:.3f}")
+
+    # Predykcja
+    y_pred = pipeline.predict(X_test)
+
+    # Metryki regresji
+    mae = mean_absolute_error(y_test, y_pred)
+    rmse = sqrt(mean_squared_error(y_test, y_pred))
+    # Zapis metryk do pliku
+    with open("Results/metrics.txt", "w") as f:
+        f.write(f"R2 Score: {round(score, 3)}\n")
+        f.write(f"MAE: {round(mae, 2)}\n")
+        f.write(f"RMSE: {round(rmse, 2)}\n")
+
+    # Wykres rzeczywista vs przewidywana cena
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.xlabel("Rzeczywista cena")
+    plt.ylabel("Przewidywana cena")
+    plt.title("Rzeczywista vs Przewidywana cena gry")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("Results/model_results.png", dpi=120)
+
+    # Zapis modelu
+    os.makedirs("Model", exist_ok=True)
+    sio.dump(pipeline, "Model/steam_pipeline.skops")
+    print("Model saved to Model/steam_pipeline.skops")
 
 if __name__ == "__main__":
-    app.launch()
+    main()
