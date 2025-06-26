@@ -29,6 +29,9 @@ jobs:
           pip install -r requirements.txt
           pip install -r App/requirements.txt
 
+      - name: Install CML
+        run: pip install cml
+
       - name: Format code
         run: make format
 
@@ -38,7 +41,6 @@ jobs:
       - name: Evaluate model
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        container: iterativeai/cml:0.12.23
         run: |
           echo "Running evaluation with CML"
           make eval
