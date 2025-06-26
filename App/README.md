@@ -1,10 +1,18 @@
-﻿title: SUML Project
-emoji: 👀
-colorFrom: blue
-colorTo: blue
-sdk: docker
-app_port: 8501
-tags:
-  - streamlit
+﻿---
+title: "Steam Game Price Predictor"
+emoji: "🎮"
+colorFrom: "blue"
+colorTo: "green"
+sdk: "gradio"
+sdk_version: "3.22"
+app_file: "steam_app.py"
 pinned: false
-short_description: Streamlit template space
+---
+
+# Steam Game Price Predictor
+
+This app predicts the price of a Steam game based on its features using a trained model.
+
+Enter the game details and see the predicted price.
+
+© 2025 | Predictive model trained on Steam data.
