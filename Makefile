@@ -19,8 +19,20 @@ eval:
 	cml comment create report.md
 
 update-branch:
-	git config --global user.name "$(Lithola)"
-	git config --global user.email "$(crossbreed.lithola@gmail.com)"
-	git add -A
-	git commit -m "Update with new results"
+	git config --global user.name $(USER_NAME)
+	git config --global user.email $(USER_EMAIL)
+	git commit -am "Update with new results"
 	git push --force origin HEAD:update
+
+hf-login:
+	git pull origin update
+	git switch update
+	pip install -U "huggingface_hub[cli]"
+	huggingface-cli login --token $(HF) --add-to-git-credential
+
+push-hub:
+	huggingface-cli upload Lit69Vivian/SUML_project ./App --repo-type=space --commit-message="Sync App files"
+	huggingface-cli upload Lit69Vivian/SUML_project ./Model /Model --repo-type=space --commit-message="Sync Model"
+	huggingface-cli upload Lit69Vivian/SUML_project ./Results /Metrics --repo-type=space --commit-message="Sync Results"
+
+deploy: hf-login push-hub
