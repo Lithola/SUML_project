@@ -29,6 +29,10 @@ jobs:
           pip install -r requirements.txt
           pip install -r App/requirements.txt
 
+      - name: Install CML
+        run: |
+          pip install cml
+
       - name: Format code
         run: make format
 
