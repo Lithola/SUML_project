@@ -1,7 +1,8 @@
 pandas
 numpy
-scikit-learn
+scikit-learn=1.7.0
 matplotlib>=3.7
 streamlit
 joblib
 skops
+gradio>=4.0
