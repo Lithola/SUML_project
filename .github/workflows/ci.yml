@@ -23,14 +23,17 @@ jobs:
         with:
           python-version: "3.9"
 
+      - name: Set up Node (for CML)
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r App/requirements.txt
-
-      - name: Install CML
-        run: pip install cml
+          npm install -g @dvcorg/cml
 
       - name: Format code
         run: make format
@@ -38,12 +41,10 @@ jobs:
       - name: Train model
         run: make train
 
-      - name: Evaluate model
+      - name: Evaluate model and post comment
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Running evaluation with CML"
-          make eval
+        run: make eval
 
       - name: Update branch
         env:
