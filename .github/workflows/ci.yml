@@ -1,3 +1,15 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   build:
     if: github.actor != 'github-actions[bot]'
@@ -9,7 +21,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.9"
 
       - name: Install dependencies
         run: |
