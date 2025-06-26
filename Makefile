@@ -19,8 +19,8 @@ eval:
 	cml comment create report.md
 
 update-branch:
-	git config --global user.name $(USER_NAME)
-	git config --global user.email $(USER_EMAIL)
+	git config --global user.name "$(USER_NAME)"
+	git config --global user.email "$(USER_EMAIL)"
 	git commit -am "Update with new results"
 	git push --force origin HEAD:update
 
@@ -32,7 +32,7 @@ hf-login:
 
 push-hub:
 	huggingface-cli upload Lit69Vivian/SUML_project ./App --repo-type=space --commit-message="Sync App files"
-	huggingface-cli upload Lit69Vivian/SUML_project ./Model /Model --repo-type=space --commit-message="Sync Model"
-	huggingface-cli upload Lit69Vivian/SUML_project ./Results /Metrics --repo-type=space --commit-message="Sync Results"
+	huggingface-cli upload Lit69Vivian/SUML_project ./Model --repo-type=space --commit-message="Sync Model"
+	huggingface-cli upload Lit69Vivian/SUML_project ./Results --repo-type=space --commit-message="Sync Results"
 
 deploy: hf-login push-hub

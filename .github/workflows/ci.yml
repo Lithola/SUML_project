@@ -18,12 +18,6 @@ jobs:
       - name: Install Packages
         run: make install 
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r App/requirements.txt
-
       - name: Format
         run: make format
 
