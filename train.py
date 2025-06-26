@@ -6,7 +6,7 @@ model_path = "Model/steam_pipeline.skops"
 
 # Wczytaj model z dopuszczeniem typu numpy.dtype
 with open(model_path, "rb") as f:
-    model = sio.load(f, trusted={"numpy.dtype"})
+    model = sio.load(f, trusted=["numpy.dtype"])
 
 # Funkcja predykcyjna
 def predict_price(english, required_age, categories, genres, platforms,
