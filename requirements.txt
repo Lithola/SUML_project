@@ -1,1 +1,2 @@
 black>=24.1
+gradio>=4.0
