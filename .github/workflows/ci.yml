@@ -1,4 +1,5 @@
 name: Continuous Integration
+
 on:
   push:
     branches: [ "main" ]
@@ -6,32 +7,42 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: iterative/setup-cml@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Install Packages
-        run: make install 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
 
-      - name: Format
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r App/requirements.txt
+
+      - name: Format code
         run: make format
 
-      - name: Train
+      - name: Train model
         run: make train
 
-      - name: Evaluation
+      - name: Evaluate model
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running evaluation with CML"
           make eval
 
-      - name: Update Branch
+      - name: Update branch
         env:
           USER_NAME: ${{ secrets.USER_NAME }}
           USER_EMAIL: ${{ secrets.USER_EMAIL }}
