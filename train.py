@@ -2,7 +2,7 @@ import gradio as gr
 import pandas as pd
 import skops.io as sio
 
-model_path = "../Model/steam_pipeline.skops"
+model_path = "Model/steam_pipeline.skops"
 
 # Wczytaj model z dopuszczeniem typu numpy.dtype
 with open(model_path, "rb") as f:
