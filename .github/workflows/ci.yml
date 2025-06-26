@@ -12,6 +12,9 @@ permissions:
 
 jobs:
   build:
+  if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
     runs-on: ubuntu-latest
 
     steps:
