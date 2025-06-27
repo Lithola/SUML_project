@@ -4,7 +4,7 @@ emoji: "🎮"
 colorFrom: "blue"
 colorTo: "green"
 sdk: "gradio"
-sdk_version: "4.20.1"
+sdk_version: "3.22"
 app_file: "steam_app.py"
 pinned: false
 ---
